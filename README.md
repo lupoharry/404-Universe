@@ -119,7 +119,7 @@ Move your mouse off the page and the cat panics and starts digging at the neares
 
 <table align="center">
   <tr>
-    <td align="center"><img src="gif/26.GIF" width="200" alt="Sleepy sit"><br><sub>1. "I'm not tired."</sub></td>
+    <td align="center"><img src="gif/27.GIF" width="200" alt="Sleepy sit"><br><sub>1. "I'm not tired."</sub></td>
     <td align="center"><img src="gif/29.GIF" width="200" alt="Z"><br><sub>2. "Maybe a little."</sub></td>
     <td align="center"><img src="gif/30.GIF" width="200" alt="ZZ"><br><sub>3. "ZzZzZ"</sub></td>
   </tr>
@@ -131,9 +131,9 @@ Move your mouse off the page and the cat panics and starts digging at the neares
 
 <table align="center">
   <tr>
-    <td align="center"><img src="gif/27.GIF" width="200" alt="Wash A"><br><sub>"What? I always look this good."</sub></td>
-    <td align="center"><img src="gif/31.GIF" width="200" alt="Stretch"><br><sub>"This is my 'I have an idea' pose."</sub></td>
-    <td align="center"><img src="gif/24.GIF" width="200" alt="Scratch"><br><sub>"Do not look at me."</sub></td>
+    <td align="center"><img src="gif/26.GIF" width="200" alt="Wash"><br><sub>"What? I always look this good."</sub></td>
+    <td align="center"><img src="gif/31.GIF" width="200" alt="Paw raised"><br><sub>"I have an idea. It involves your cursor."</sub></td>
+    <td align="center"><img src="gif/28.GIF" width="200" alt="Grooming"><br><sub>"Do not look at me."</sub></td>
   </tr>
 </table>
 
