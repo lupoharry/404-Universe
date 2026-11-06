@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Particle Field</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
+  canvas { display: block; position: fixed; inset: 0 0 30%; width: 100%; height: 70%; }
+  h1 {
+    position: fixed; inset: 0 0 30%; margin: 0; display: grid; place-items: center;
+    font: 600 clamp(2rem, 6vw, 5rem) system-ui, sans-serif; color: #111;
+    pointer-events: none; letter-spacing: -0.02em;
+  }
+  .oneko-zone {
+    position: fixed; inset: 70% 0 0; background: #fff; overflow: hidden;
+  }
+  .oneko {
+    position: absolute; left: 50%; top: 50%; width: 64px; height: 64px;
+    transform: translate(-50%, -50%); user-select: none; will-change: left, top;
+  }
+  .oneko-sprite {
+    display: block; width: 64px; height: 64px; image-rendering: pixelated;
+  }
+  .heart {
+    position: absolute; left: 50%; top: -1.6rem;
+    color: #e64980; font: 1.6rem/1 system-ui, sans-serif;
+    opacity: 0; pointer-events: none; transform: translate(-50%, 0) scale(0.6);
+  }
+  .heart.visible { animation: heart-pop 1.2s ease-out forwards; }
+  @keyframes heart-pop {
+    20% { opacity: 1; transform: translate(-50%, -5px) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -28px) scale(0.8); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .heart.visible { animation-duration: 0.01ms; animation-iteration-count: 1; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<h1>404 Universe</h1>
+<div class="oneko-zone" aria-label="Oneko cat area">
+  <div class="oneko" id="oneko" role="img" aria-label="Oneko cat">
+    <img class="oneko-sprite" id="sprite" src="gif/25.GIF" alt="" aria-hidden="true">
+    <span class="heart" id="heart" aria-hidden="true">♥</span>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const oneko = document.getElementById('oneko');
+const heart = document.getElementById('heart');
+const RADIUS = 160, COUNT = 2500;
+const HUES = [174, 215, 280, 330, 25, 115];
+const mouse = { x: -9999, y: -9999 }, smooth = { x: -9999, y: -9999 };
+const pointer = { x: 0, y: 0, lastMoved: 0 };
+let particles = [], w, h, dpr, startTime, catX, catY;
+
+function init() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  w = innerWidth; h = innerHeight * 0.7;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  particles = Array.from({ length: COUNT }, () => {
+    const x = Math.random() * w, y = Math.random() * h;
+    return { hx: x, hy: y, x, y, vx: 0, vy: 0, ph: Math.random() * Math.PI * 2, s: 1 + Math.random() * 1.5, hue: HUES[0] };
+  });
+  if (catX === undefined) {
+    const zone = oneko.parentElement.getBoundingClientRect();
+    catX = zone.width / 2;
+    catY = zone.height / 2;
+  } else {
+    const zone = oneko.parentElement.getBoundingClientRect();
+    const insetX = Math.min(36, zone.width / 2);
+    const insetY = Math.min(30, zone.height / 2);
+    catX = Math.max(insetX, Math.min(zone.width - insetX, catX));
+    catY = Math.max(insetY, Math.min(zone.height - insetY, catY));
+  }
+}
+
+addEventListener('resize', init);
+addEventListener('pointermove', e => {
+  pointer.x = e.clientX;
+  pointer.y = e.clientY;
+  pointer.lastMoved = performance.now();
+  pointerInside = true;
+  hasMoved = true;
+  const rect = canvas.getBoundingClientRect();
+  if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+    mouse.x = (e.clientX - rect.left) * w / rect.width;
+    mouse.y = (e.clientY - rect.top) * h / rect.height;
+  } else {
+    mouse.x = mouse.y = -9999;
+  }
+});
+document.documentElement.addEventListener('pointerleave', () => {
+  mouse.x = mouse.y = -9999;
+  pointerInside = false;
+});
+
+// Frame numbers follow the reference Oneko: gif/N.GIF is animation N - 1.
+const gif = n => `gif/${n + 1}.GIF`;
+const TICK_MS = 100, SPEED = 24, CATCH = 24, TRIGGER = 64, DIG_TICKS = 50;
+const DIRECTION_FRAMES = { right: 4, downRight: 6, down: 8, downLeft: 10, left: 12, upLeft: 14, up: 0, upRight: 2 };
+const sprite = document.getElementById('sprite');
+let pointerInside = false, lastTick = 0, shownFrame = -1;
+let catState = 'idle', animFrame = 0, surprisedTicks = 0, digTicks = 0, digFrames = [20, 21];
+let idleTicks = 0, idleAction = 'sit', idleActionTicks = 0;
+
+function showFrame(n) {
+  if (n === shownFrame) return;
+  shownFrame = n;
+  sprite.src = gif(n);
+}
+
+function directionFrame(dx, dy) {
+  const deg = Math.atan2(dy, dx) * 180 / Math.PI;
+  let key;
+  if (deg >= -22.5 && deg <= 22.5) key = 'right';
+  else if (deg > 22.5 && deg <= 67.5) key = 'downRight';
+  else if (deg > 67.5 && deg <= 112.5) key = 'down';
+  else if (deg > 112.5 && deg <= 157.5) key = 'downLeft';
+  else if (deg > 157.5 || deg <= -157.5) key = 'left';
+  else if (deg > -157.5 && deg <= -112.5) key = 'upLeft';
+  else if (deg > -112.5 && deg <= -67.5) key = 'up';
+  else key = 'upRight';
+  return DIRECTION_FRAMES[key];
+}
+
+function nearestEdgeFrames() {
+  const left = pointer.x, right = innerWidth - pointer.x;
+  const top = pointer.y, bottom = innerHeight - pointer.y;
+  const min = Math.min(left, right, top, bottom);
+  if (min === top) return [16, 17];
+  if (min === bottom) return [20, 21];
+  if (min === left) return [22, 23];
+  return [18, 19];
+}
+
+function startIdle() {
+  catState = 'idle';
+  idleTicks = 0;
+  idleAction = 'sit';
+  idleActionTicks = 0;
+}
+
+function idleTick() {
+  idleTicks++;
+  if (idleTicks % 100 === 0) {
+    if (idleAction === 'sit') {
+      if (Math.random() < 0.15) { idleAction = 'wash'; idleActionTicks = 0; }
+      else if (idleTicks > 300 && Math.random() < 0.1) { idleAction = 'sleep'; idleActionTicks = 0; }
+    } else if (idleAction === 'wash' && idleActionTicks > 30) {
+      idleAction = 'sit';
+      idleActionTicks = 0;
+    }
+  }
+  if (idleAction === 'sit') showFrame(24);
+  else if (idleAction === 'wash') {
+    idleActionTicks++;
+    showFrame(24 + (Math.floor(idleTicks / 3) % 2));
+  } else {
+    idleActionTicks++;
+    showFrame(idleActionTicks < 20 ? 26 : 28 + (Math.floor(idleTicks / 5) % 2));
+  }
+}
+
+function catTick() {
+  const zone = oneko.parentElement.getBoundingClientRect();
+  const insetX = Math.min(32, zone.width / 2);
+  const insetY = Math.min(32, zone.height / 2);
+
+  if (!pointerInside) {
+    if (catState === 'idle' && !hasMoved) { idleTick(); return; }
+    if (catState !== 'digging' && hasMoved) {
+      catState = 'digging';
+      digTicks = 0;
+      digFrames = nearestEdgeFrames();
+    }
+    if (catState === 'digging') {
+      digTicks++;
+      showFrame(digFrames[digTicks % 2]);
+      if (digTicks >= DIG_TICKS) {
+        startIdle();
+        idleTicks = 301;
+        idleAction = 'sleep';
+      }
+      return;
+    }
+    idleTick();
+    return;
+  }
+
+  const targetX = Math.max(insetX, Math.min(zone.width - insetX, pointer.x - zone.left));
+  const targetY = Math.max(insetY, Math.min(zone.height - insetY, pointer.y - zone.top));
+  const dx = targetX - catX, dy = targetY - catY;
+  const distance = Math.hypot(dx, dy);
+
+  if (distance < CATCH) {
+    if (catState !== 'idle') { startIdle(); showFrame(24); }
+    idleTick();
+    return;
+  }
+  if ((catState === 'idle' || catState === 'digging') && distance > TRIGGER) {
+    catState = 'surprised';
+    surprisedTicks = 5;
+    showFrame(31);
+    return;
+  }
+  if (catState === 'surprised') {
+    if (--surprisedTicks > 0) return;
+    catState = 'chasing';
+  }
+  if (catState === 'chasing') {
+    catX += Math.round(dx / distance * SPEED);
+    catY += Math.round(dy / distance * SPEED);
+    animFrame = (animFrame + 1) % 2;
+    showFrame(directionFrame(dx, dy) + animFrame);
+  }
+}
+
+let hasMoved = false;
+
+function updateOneko(t) {
+  if (!lastTick) lastTick = t;
+  while (t - lastTick >= TICK_MS) {
+    lastTick += TICK_MS;
+    catTick();
+  }
+  oneko.style.left = `${catX}px`;
+  oneko.style.top = `${catY}px`;
+}
+setInterval(() => {
+  heart.classList.remove('visible');
+  void heart.offsetWidth;
+  heart.classList.add('visible');
+}, 5000);
+
+function loop(t) {
+  if (startTime === undefined) startTime = t;
+  ctx.clearRect(0, 0, w, h);
+  smooth.x += (mouse.x - smooth.x) * 0.12;
+  smooth.y += (mouse.y - smooth.y) * 0.12;
+  const time = t * 0.001;
+  const hue = HUES[Math.floor((t - startTime) / 2000) % HUES.length];
+
+  for (const p of particles) {
+    const tx = p.hx + Math.sin(time + p.ph) * 4;
+    const ty = p.hy + Math.cos(time * 0.8 + p.ph) * 4;
+    const dx = p.x - smooth.x, dy = p.y - smooth.y;
+    const d = Math.hypot(dx, dy) || 1;
+    if (d < RADIUS) {
+      const f = (1 - d / RADIUS) * 3;
+      p.vx += dx / d * f; p.vy += dy / d * f;
+      if (dx !== 0 || dy !== 0) p.hue = hue;
+    }
+    p.vx += (tx - p.x) * 0.008; p.vy += (ty - p.y) * 0.008;
+    p.vx *= 0.92; p.vy *= 0.92;
+    p.x += p.vx; p.y += p.vy;
+
+    const speed = Math.min(Math.hypot(p.vx, p.vy) / 6, 1);
+    ctx.fillStyle = `hsl(${p.hue}, 75%, 45%)`;
+    ctx.fillRect(p.x, p.y, p.s + speed * 1.5, p.s + speed * 1.5);
+  }
+  updateOneko(t);
+  requestAnimationFrame(loop);
+}
+
+init();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
