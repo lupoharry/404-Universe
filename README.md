@@ -167,13 +167,9 @@ Every **5 seconds**, a heart pops up above the cat. This is not configurable, no
 
 ## 🧪 Testing and QA
 
-Tested thoroughly by moving the mouse around and watching a cat chase it for far longer than strictly necessary.
+There is no automated test runner or build setup. The manual acceptance scenarios are documented in [`TEST-CASES.md`](TEST-CASES.md), and the recorded browser run is in [`TEST-REPORT.md`](TEST-REPORT.md).
 
-- ✅ Cat chases the pointer
-- ✅ Cat digs when the pointer leaves
-- ✅ Cat naps when ignored
-- ✅ Heart appears every 5 seconds
-- ❌ Cat does not fetch your 404 page. We asked.
+The report records 10 of 20 scenarios passing, 4 failing, and 6 not run. It is a dated snapshot, not a verification of the current source. The run used a hidden browser page, so live animation quality was not assessed; keyboard, touch, cross-browser, and deployed-site checks were also not performed. Consult the report for the findings and limitations before relying on those results.
 
 ---
 
