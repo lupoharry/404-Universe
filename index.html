@@ -38,9 +38,12 @@
     pointer-events: none; letter-spacing: -0.02em;
   }
   .tagline {
-    position: fixed; left: 0; right: 0; top: calc(35% + 3.5rem); margin: 0;
-    text-align: center; font: 400 clamp(0.8rem, 1.6vw, 1.1rem) system-ui, sans-serif;
-    color: #555; padding: 0 1rem; pointer-events: none;
+    position: fixed; z-index: -1; left: 50%; bottom: 0.75rem;
+    max-width: calc(100% - 2rem); margin: 0; padding: 0.3rem 0.65rem;
+    transform: translateX(-50%); border-radius: 0.25rem;
+    background: rgb(255, 255, 255); color: #fff;
+    text-align: center; font: 400 0.75rem/1.4 system-ui, sans-serif;
+    pointer-events: none;
   }
   .oneko-zone {
     position: fixed; inset: 70% 0 0; background: #fff; overflow: hidden;
@@ -70,6 +73,7 @@
 <body>
 <canvas id="c"></canvas>
 <h1>404 Universe</h1>
+<p class="tagline">Quality assurance and test management professional leading global teams.</p>
 <div class="oneko-zone" aria-label="Oneko cat area">
   <div class="oneko" id="oneko" role="img" aria-label="Oneko cat">
     <img class="oneko-sprite" id="sprite" src="gif/25.GIF" alt="" aria-hidden="true">
